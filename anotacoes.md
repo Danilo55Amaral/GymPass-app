@@ -89,3 +89,92 @@ sugestão que podemos atualizar as dependencias.
 - Para fazer isso eu crio um arquivo .npmrc e dentro desse arquivo eu passo 
 save-exact=true é importante fazer isso logo no inicio antes de instalar as 
 libs e coisas do projeto.
+
+# Carregando veriáveis de ambiente 
+
+- Foi criado um arquivo .env para configurar as variaveis de ambientes, também foi 
+criando um arquivo .env.example que serve para quando outra pessoa baixar o projeto 
+ela saber quais variaveis de ambiente serão necessárias serem criadas, isso por que 
+o arquivo .env é adicionado ao gitIgnore.
+
+- Para carregar essas variáveis de ambiente é necessário instalar uma biblioteca 
+chamada dotenv rodando o comando   npm i dotenv  essa biblioteca vai carregar 
+esse arquivo .env e vai transformar em variaveis de ambiente dentro do node.js. 
+
+npm i dotenv
+
+- Para fazer esse carregamento dessas variaveis de ambiente de uma forma mais organizada 
+foi criada uma pasta chamada env com um arquivo index.ts dentro desse arquivo eu carrego 
+as variaveis de ambiente importando o dotenv/config, em seguida dentro desse arquivo 
+foi feita a validação dessas variaveis de ambiente, para fazer essa validação também
+foi utilizado uma lib que é o zod para isso precisa ser instalado rodando o comando 
+
+npm i zod 
+
+- Deve ser importando o z de dentro de zod para poder fazer todas as validações 
+necessárias, em seguida foi criada uma variavel envSchema que recebe z.object 
+isso por que quando o dotenv carrega as variaveis de ambiente todos os valores 
+vem dentro de um objeto, inicialmente eu validei a variavel NODE_ENV e essa variavel
+precisa ser um entre algumas outras opções e por isso foi utilizado um enum e dentro 
+desse anum foi passado as opções validas para esse NODE_ENV, Foi passado um default 
+com um valor caso essa variavel não seja passada.
+
+import "dotenv/config";
+import { z } from "zod";
+
+const envSchema = z.object({
+    NODE_ENV: z.enum(['dev', 'test', 'production']).default('dev'),
+})
+
+- Outra variavel ambiente comum é a PORT que é a porta do servidor alguns serviços
+de hospedagem setam essa variavel de forma automatizada por isso essa variavel é 
+necessária para que a aplicação seja informada qual porta será utilizada na hora de 
+subir o servidor, nessa variavel utilizamos o coerce que pega algum dado de qualquer 
+formato e converte para um formato escolhido coerce.number() , também posso utilizar 
+um dafault passando algum valor padrão caso a porta não seja encontrada.
+
+const envSchema = z.object({
+    NODE_ENV: z.enum(['dev', 'test', 'production']).default('dev'),
+    PORT: z.coerce.number().default(3333),
+})
+
+- Depois de criado a envSchema é feita a validação em si , foi criado uma const 
+chamada _env passando o envSchema e para executar a validação é utilizado o 
+metodo safeParse passando o local onde ficam as variaveis de ambiente que é o 
+process.env
+
+const _env = envSchema.safeParse(process.env)
+
+- Para verificar se a validação deu certo ou não eu crio um teste se _env não teve 
+sucesso por isso utilizo o success se isso for falso quer dizer que houve algum erro 
+e posso retornar um consol.error com uma mensagem de erro, em seguida é passado o 
+_env com error passando format que é um metodo que vaipegar todos os erros que ocorreram 
+no processo de validação e formatar eles de uma forma mais simples , depois foi passado 
+um trow new Error isso por que toda vez que um código entra em um trow nenhum código 
+seguinte será mais executado. Isso faz com que a plicação não execute caso der algum 
+erro nas variaveis de ambiente.
+
+if (_env.success == false) {
+    console.error('Invalid environment variables', _env.error.format())
+
+    throw new Error('Invalid environment variables.')
+}
+
+- Caso a aplicação passe nesse if e seja um sucesso exportamos uma variavel env 
+que recebe _env setando os dados data das variaveis de ambiente.
+
+export const env = _env.data
+
+- Em seguida eu vou no server e utilizo a variavel PORT e rodo o servidor para ver 
+se está funcionando. PS - é necessário importar o env 
+
+import { env } from "./env";
+
+app.listen({
+    host: '0.0.0.0',
+    port: env.PORT,
+}).then(() => {
+    console.log('HTTP Server Running!')
+})
+
+
