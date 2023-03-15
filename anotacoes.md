@@ -73,3 +73,19 @@ desenvolvimento ele vai startar para produção executando a nossa build.
 
 "start": "node build/server.js"
 
+# Usando versões exatas do NPM
+
+- Quando o projeto estiver rodando em produção umas das coisas importantes é sempre 
+atualizar as dependencias do projeto, isso é importante por questão de segurança ou 
+performance, por isso é normal ao decorrer do tempo querer evoluir as dependencias,
+não tem como pegar e sair atualizando todas as dependencias pois isso poderia trazer 
+alguns problemas, por isso é importante quando construir o projeto instalar as versões
+exatas das dependencias, isso faz com que alguns bots do git-hub como o renovate que 
+fica tentando atualizar  as dependencias do projeto, esses bots também rodam os testes 
+da aplicação para verificar se a aplicação continua funcionando sem problemas após  
+atualizar as dependencias, se não houver problemas ele cria um pull request dando uma 
+sugestão que podemos atualizar as dependencias.
+
+- Para fazer isso eu crio um arquivo .npmrc e dentro desse arquivo eu passo 
+save-exact=true é importante fazer isso logo no inicio antes de instalar as 
+libs e coisas do projeto.
