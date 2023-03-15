@@ -177,4 +177,20 @@ app.listen({
     console.log('HTTP Server Running!')
 })
 
+# Criando eliases de importação 
+
+- Quando o projeto tem muitas pastas e fazemos importações elas podem ficar muito 
+longas dificultando alguém ler esse código, uma forma de melhorar isso é ir dentro 
+do arquivo tsconfig.json e configuramos uma opção chamada "baseUrl": "./" ele indica 
+qual o diretório rayz da aplicação , eu informo também o "paths": {},  dentro dele 
+eu defino o seguinte ==> quando uma importação que começa com @/ for digitada 
+tudo que vier depois da barra o vsCode vai entender como se tivesse sendo feita uma
+importação em ./src/* ou seja toda vez que for importado em qualquer arquivo da 
+aplicação e ela começar com @/ tudo que for digitado após vai ser tratado como se 
+tivesse sendo feita uma importação direta da pasta src ==>  "@/*": ["./src/*"] 
+
+ "baseUrl": "./",                                 
+    "paths": {
+      "@/*": ["./src/*"]
+    }, 
 
