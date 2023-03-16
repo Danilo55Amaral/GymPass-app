@@ -194,3 +194,124 @@ tivesse sendo feita uma importação direta da pasta src ==>  "@/*": ["./src/*"]
       "@/*": ["./src/*"]
     }, 
 
+# Fundamentos do Prisma ORM
+
+## ORM (Object Relational Mapping)
+
+- A partir de agora trabalhamos com banco de dados e ao invés de utilizar um query 
+builder como o knex utilizamos um ORM que são ferramentas que trazem um alto nível de 
+abstração, na parte de trabalhar com banco de dados, ou seja traz um leque de ferramentas
+maior para se trabalhar com dba, a idéia do ORM é mapear as tabelas do banco de dados 
+para estruturas de dentro do código que se consiga representar essas tabelas como classes
+
+- O Prisma é o melhor ORM por que ele diminui bastante o trabalho e principalmente a 
+parte de duplicidade quando se trabalha com banco de dados e também tem uma integração 
+muito boa com o TypeScript, outro recurso muito legal é que ele faz toda a parte de 
+migrations de forma automatizada.
+
+- Para iniciar o Prisma deve ser instalado rodando o comando abaixo como dependencia de
+desenvolvimento.
+
+    npm i prisma -D 
+
+- Executando npx prisma -h eu tenho acesso a uma série de comandos que posso utilizar 
+com o Prisma para fazer operações comuns no db 
+
+- O comando abaixo vai inicializar a parte de banco de dados da aplicação, parte de 
+conexão com o banco de dados.
+
+    npx prisma init
+
+- Note que após inicializar ele criou uma pasta prisma com um arquivo schema.prisma 
+é importante instalar a extenção do Prisma, é importante também no editor 
+settings.json colocar o comando abaixo para facilitar a formatação do arquivo do 
+Schema do prisma.
+
+## Prisma: Configurando extensão no VSCode
+
+1. Instale a extensão Prisma no seu Visual Studio Code.
+2. Abra a Paleta de Comandos: Se estiver no Windows ou Linux: CTRL + SHIFT + P
+3. Abra as configurações em JSON buscando por: 
+  - Se o seu VSCode estiver em português: Abrir as Configurações do usuário (JSON)
+  - Se o seu VSCode estiver em inglês: Open User Settings (JSON)
+4. Adicione dentro do JSON o código abaixo:
+
+"[prisma]": {
+  "editor.defaultFormatter": "Prisma.prisma",
+  "editor.formatOnSave": true
+},
+
+- O Schema dentro do prisma é a representação das tabelas que temos no banco de dados 
+o prisma suporta vários banco de dados e ele suporta esse conceito de tabela de uma 
+forma diferente, por isso o prima ele na cria tabelas mas cria model que é uma estrutura
+onde vai ser armazenado os dados, no model damos a ele um nome sempre iniciando em 
+maiúsculas e nunca no plural, por ex queremos criar uma tabela para usuário então 
+criamos um model User, mas caso seja necessário trocar por exemplo depois o nome da 
+tabela , temos recuusus como o @@mao("users") que por exemplo troco o nome por users. 
+
+- Em seguida eu crio as coluna da minha tabela como id por exemplo, note que se eu errar 
+algo como colocar string ao invés de String o próprio prisma vai me corrigir.
+Note que ao utilizar o @ ele vai trazer algumas configurações a nível de coluna quando
+tiver criando as colunas da tabela, quando se coloca dois @@ vai está sendo configurada 
+a tabela, o @id que é obrigatório em cada tabela que é a chave primária, o @default 
+pode ser passado 3 opções uuid() que segue a especificação do uuid que vai gerar um id 
+longo e universalmente único, o cuid() tem a mesma idéia porém é um pouco mais curto.
+
+# UUID()
+
+- Na maioria das vezes se utiliza para transformar rotas com ids que ficam publicamente
+expostos isso dificulta alguém ficar passando ids aleatórios e identificar usuários.
+
+- Abaixo foi criado o promeiro model:  
+
+model User {
+  id    String @id @default(uuid())
+  name  String
+  email String @unique
+
+  @@map("users")
+}
+
+- Note que como ainda não foi feita a conexão e nem criado o banco de dados esse 
+comando não funciona é só um exemplo.
+
+## É necessário criar a tipagem do Schema 
+
+- Esse comando abaixo cria de forma automatizada a tipagem desse Schema, essa tipagem 
+é a integração do typescript para que o código entenda que exista a tabela criada 
+e que ela possue seus campos.
+
+        npx prisma generate  
+
+- Uma forma de testar se funcionou é dentro de node_modules procurar a pasta .prisma 
+em seguida a pasta client abrir o arquivo index.d.ts e note que dentro desse arquivo o 
+model que foi criado vai estar lá.
+
+- Em seguida é necessário também instalar o client do prisma rodando o comando abaixo:
+    npm i @prisma/client 
+
+- Note que essa dependencia a cima é instalada de produção pois será usada para acessar 
+o banco de dados. 
+
+## Testando 
+
+- Dentro de app.ts só para validar se está funcionando eu importei o PrismaClient 
+eu eu crio uma conexão com o banco de dados estanciando esse PrismaClient e quando 
+eu passo prisma. ele já vai trazer user que é a tabela que criamos quando eu utilizo 
+um ponto no user ele tras todos os metodos que podem ser executados nesse model, eu 
+fiz um teste com um create. 
+
+import fastify from "fastify";
+import { PrismaClient } from "@prisma/client";
+
+export const app = fastify()
+
+const prisma = new PrismaClient()
+
+prisma.user.create({
+    data: {
+        name: 'Danilo Amaral',
+        email: 'danilo123amaral.com.br',
+    },
+})
+
