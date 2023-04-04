@@ -315,3 +315,118 @@ prisma.user.create({
     },
 })
 
+# Fundamentos do Docker 
+
+https://www.docker.com
+
+- Umas das ferramentas muito utilizadas e indispensável principalmente no back end 
+principalmente também na parte de Deploy da aplicação, utilizamos para desenvolvimento 
+da aplicação para instalar banco de dados na maquina sem precisar instalar na própria 
+maquina, é mais utilizado ainda em ambiente de produção por que o Docker facilita 
+bastante o deploy. 
+
+- Umas das idéias de se utilizar o Docker é conseguir por exemplo subir um banco de 
+dados para a aplicação, o banco esteja rodando na máquina mas a qualquer momento poder
+excluir de forma facil aquele banco com todos os dados, arquivos de instalação, residuos
+nada fica na maquina, fica tudo em Containers Virtuais.
+
+# PostgreSQL com Docker 
+
+link para instalação do Docker:  https://docs.docker.com/get-docker/
+
+## Dockerhub 
+
+- O dockerHub é um repositório de imagens do Docker  link:  https://hub.docker.com
+- Imagens no docker são como receitas, são scripts que são preconfigurados para executar
+coisas como banco de dados por exemplo, essas imagens são serviços que precisam ser 
+executados para colocar na maquina, rodamos essas imagens no docker.
+
+- nessa aplicação utilizamos uma imagem da bitnami/postgresql, foi optado por essa da 
+bitnami por que ela ja vem trabalhada com uma parte de segurança.
+
+- Aqui vamos rodar o postgres na máquina, no terminal e executamos o comando abaixo 
+        docker run --name nome-que-quero-dar-a-imagem imagem-que-vai-ser-utilizada
+
+- exemplo --> docker run --name postgresql bitnami/postgresql:latest 
+PS- o latest é opcional
+
+- Existe uma forma demelhorar a criação dessa imagem, podemos adicionar algumas 
+variveis de ambiente para facilitar ainda mais nosso trabalho de conexão do banco 
+de dados com a api, se olhar na documentação da imagem podemos ver algumas variaveis de
+ambiente que podemos passar no momento de criação da imagem. utilizamos o prefixo 
+-e para passar essas variaveis, inclusive já dá até para criar também um banco de dados
+também.
+
+- Podemos passar o -p para direcionar a porta do postgres que está rodando seja 
+direcionada para a porta do host do navegador com isso quando for acessar a mesma 
+porta no navegador vai está acessando a mesma porta dentro do container.
+
+    docker run --name api-solid-pg -e POSTGRESQL_USERNAME=docker -e POSTGRESQL_PASSWORD=docker -e POSTGRESQL_DATABASE=apisolid -p 5432:5432  bitnami/postgresql
+
+- Após isso ele vai subir o banco de dados criado ao container do docker.
+
+## Alguns comandos
+
+- O comando docker ps retorna todos os comando que estão rodando
+
+- O comando docer ps -a ele vai mostrar todos os containers que foram criados em 
+algum momento
+
+## Rodando o container 
+
+- Para rodar o comando basta utilizar o comando start passando o id ou o nome do 
+container que criamos 
+
+  docker start nome-do-container 
+
+- Para parar o container basta rodar o comando stop 
+    docker stop nome-do-container 
+
+## Deletando um Container
+
+- Para deletar um container basta rodar o comano rm 
+    docker rm nome-do-container
+
+## vendo logs do container
+
+- docker logs nome-do-container
+
+- para manter os logs e ficar monitorando ==>  docker logs nome-do-container -f 
+
+## Validando o acesso ao banco dentro do container 
+
+- Dentro do arquivo de .env na variavel de DATABASE_URL colocamod os dados de 
+acesso ao banco 
+
+- subistituir esses dados abaixo: 
+DATABASE_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"
+
+- por esses abaixo: 
+DATABASE_URL="postgresql://docker:docker@localhost:5432/apisolid?schema=public"
+
+- Apenas subistiuimos os dados de login e senha e nome do banco pelo do banco do 
+nosso container.
+- lembre que para conectar o container deve estar rodando.
+
+- Para testar essa conexão no terminal eu rodei o seguinte comando abaixo: 
+    npx prisma migrate dev 
+
+- Esse comando vai no schema.prisma e vai pegar todas as tabelas que estão dentro desse
+arquivo ou campos ou quellquer tipo de alteração que tenha sido feita nesse arquivo 
+que ainda não foi refletido no banco de dados, quando rodamos esse comando ele vai 
+identificar todas as alterções e vai pedir um nome para essa migration nessa descrição 
+deve ser colocado tudo que foi feito desde a ultima vez que esse comando foi rodado. 
+
+- Note que após rodar esse comando ele criou uma pasta dentr de prisma chamada 
+migrations, dentro dessa pasta ele criou outra pasta que tem a timestamp atual 
+que é quando essa migration foi executada, o nome da migration, e dentro dessa 
+pasta um arquivo chamado migration.sql que é o sql que cria a alteração que 
+foi feita na migration.
+
+## Prisma Studio 
+ - É um recurso do prisma que gera uma interface no navegador onde conseguimos 
+ visualizar as tabelas do nosso banco de dados. 
+
+ - Para utilizar basta rodar o comando abaixo 
+    npx prisma studio
+
