@@ -430,3 +430,42 @@ foi feita na migration.
  - Para utilizar basta rodar o comando abaixo 
     npx prisma studio
 
+# utilizando o Docker Compose
+
+- O Docker Composer é um arquivo criado na raiz do projeto, esse arquivo utiliza a 
+extensão .yml, o arquivo docker-compose.yml esse arquivo vai ditar quais são todos
+os Containers que a aplicação precisa criar para que ela funcione, edentro desse 
+arquivo é necessário informar a versão da sitaxe do compose vai ser utilizada, em 
+seguida os serviços que são os nomes dos containers, também deve se indicar qual 
+imagem o serviço está utilizando, em seguida as portas, em seguida se coloca 
+environment que são as variaveis de ambientes utilizadas.
+
+version: '3'
+
+services:
+  api-solid-pg:
+    image: bitnami/postgresql
+    ports:
+      - 5432:5432
+    environment: 
+      - POSTGRESQL_USERNAME=docker
+      - POSTGRESQL_PASSWORD=docker
+      - POSTGRESQL_DATABASE=apisolid
+
+- Com isso quando for necessário baixar o projeto de um repositorio remoto por 
+exemplo basta rodar o composer para ele criar o banco com o docker com o seguinte 
+comando abaixo:
+
+        docker compose up -d   ou   docker compose up
+
+- Esse comando vai rodar todod os containers que estão dentro desse arquivo do composer de uma vez e para parar de rodar basta executar o comando abaixo que 
+ele também para de rodar todos os containers de uma única vez. Esse comando abaixo
+não só para de executar como também vai deletar todos os containers.
+
+    docker compose down 
+
+- Para apenas parar de executar todos os containers sem deletar basta rodar o 
+comando abaixo: 
+
+    docker compose stop 
+
