@@ -469,3 +469,95 @@ comando abaixo:
 
     docker compose stop 
 
+# Criando schema do Prisma
+
+- Agora comto todo o ambiente de banco de dados pronto, criamos as tabelas 
+restantes. 
+
+- Dentro do arquivo de schema.prisma vamos criar de acordo com os nossos 
+requisitos da aplicação, foi ciado mais dois models o para academia Gym e 
+o checkIn ambos possuem id como uma string, chave primaria e o default uuid
+em seguida eu criei os outros campos dessas tabelas.
+
+- Dentro das tabelas os campos de latitude e longitude são colocados 
+por que quando o usuário faz login na academia será necessário saber onde 
+ele está localizado no mapa. Isso por que um sistema de controle de chekIn em 
+academia possuem um controle bem rigoroso para que uma pessoa só consiga afetuar 
+o ckeckIn se ela estiver próxima da academia.
+
+- O @@map é utilizado para renomear as tabelas do banco.
+
+- O campo created_at é do tipo DateTime seu valor default é now() por que
+quando é um campo de data e é um campo onde será armazenado o CheckIn o now 
+armazena o valor atual daquele registro.
+
+- Se queremos saber se um chekIn ta validado ou não, podemos usar um boleano mas
+uma estratégia interessante seria trocar esse booleano por um DateTime de forma
+opcional com isso além de saber se está validado ou não da para saber também 
+quando que ele foi validado, isso foi feito no campo validated_at 
+
+model CheckIn {
+  id  String @id @default(uuid())
+  created_at DateTime @default(now())
+  validated_at DateTime?
+
+  @@map("check_ins")
+}
+
+model Gym {
+  id String @id @default(uuid())
+  title String
+  description String? 
+  phone String?
+  latitude Decimal 
+  longitude Decimal 
+
+  @@map("gyms")
+}
+
+## Campo de senha do usuário Encriptado
+
+- Dentro da tabela de usuários criamos um campo password porém esse campo precisa
+ser encriptado por que caso alguém tenha acesso ao banco ou vaze a senha está 
+encriptado.Esse campo foi chamado de password_hash por que ele vai gerar uma 
+combinação de caracteres gerada a partir da senha. 
+
+- Um fator importante é que aqui não utilizamos um algoritimo de criptografia 
+por que a criptografia na maior parte das vezes vai e volta, nesse caso aqui 
+utilizamos uma estratégia de Hashing que é diferente da criptografia.
+
+## Hashing  
+- No Hashing apenas se cria para ir não tem como voltar , desciptografar o dado
+a partir do momento em que o Hashing foi gerado não tem mais como ele voltar ao 
+estado original para saber qual a senha original que gerou esse hashing.
+
+## Rodando as alterações no banco de dados
+
+- Para rodar a migrate utilizamos o código abaixo esse comando ler o arquivo 
+schema.prisma comparando com o banco de dados que está rodando, e ver quais 
+alterações feitas no arquivo que ainda não estão atualizadas no banco de dados
+utilizamos o dev por que estamos em ambiente de desenvolvimento mas quando estiver 
+em ambiente de ptodução utilizamos o deploy. 
+
+        npx prisma migrate dev 
+        npx prisma migrate deploy
+
+- PS - Lembre que para executar esse código o banco tem que está rodando ou seja 
+rodando o container do Docker que contém o banco.
+
+-Após rodar o comando ele vai perguntar quais alterações foram feitas.
+
+- Ele deu um bug quando o comando foi executado por que o campo password_hash 
+String está como obrigatorio porém já existem dados inseridos no banco, para
+resolver esse bug basta colocar esse campo como opcional ou adicionar um @default
+com uma string vazia.
+
+- Após rodar o comando ele já cria a migrate dentro da pasta migrations já com 
+o sql que cria todas as alterações.
+
+## Testando 
+
+- Basta rodar um  npx prisma studio 
+- Ele vai abrir uma interface no navegador e podemos checar se as tabelas 
+foram criadas no banco.
+
