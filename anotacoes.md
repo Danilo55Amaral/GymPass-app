@@ -561,3 +561,81 @@ o sql que cria todas as alterações.
 - Ele vai abrir uma interface no navegador e podemos checar se as tabelas 
 foram criadas no banco.
 
+# Relacionamento entre tabelas
+
+## Tipos de relacionamentos 
+
+- 1-1 ==> Um dado de uma tebela vai se relacionar somente com um dado de uma 
+outra tabela, geralmente se cria isso para separar os dados em duas tabelas.
+
+- 1-N ==> Uma informação que está armazenada em uma tabela pode está relacionada
+com vários registros que estão armazenados em outra tabela.
+
+- N-n ==>  Um registro em uma tabela que pode está relacionado com vários 
+registros de outra e um registro dessa outra tabela pode está relacionado com 
+vários registros da tebala inicial.
+
+## Chaves estrangeiras 
+
+- Aqui criamos as chaves estrangeiras do projeto, o checkIn sempre vai está 
+associado com usuário é necessário ter um user_id na tabela checkIn com o 
+tipo de campo do id de user isso por que o id do usuário vai ficar armazenado 
+dentro do user_id, a mesma coisa vai ser com a tabela de Gym isso por que o 
+usuário faz um checkin em uma academia por isso é necessário também ter um  
+gym_id que será o id da academia.
+
+model CheckIn {
+  id           String    @id @default(uuid())
+  created_at   DateTime  @default(now())
+  validated_at DateTime?
+
+  user_id String
+  gym_id  String
+
+  @@map("check_ins")
+}
+
+- Se for feito apenas dessa maneira o prisma não vai entender que esses campos 
+se tratam de chaves estrangeiras e por isso é necessário utilizar o @relation, 
+com a extensão do prisma no vscode ele facilita muito a criação de 
+relacionamentos, eu vou dize que o chekIn está relacionado com o user que é do 
+tipo User isso nada mais é que um nome que damos ao relacionamento ==> user
+
+user User 
+
+- como eu estou utilizando a extenção do prisma no momento em que salvo esse 
+código ele vai gerar automaticamente o código de relacionamento.
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+- Note que ele já cria o relacionamento ele utilizao @relation e ele está falando 
+para criar uma chave estrangeira que referencia a coluna id dentro de User com 
+o campo userId deste checkIn eu posso substtuir a sintaxe do userId por user_id
+
+- Ele também já adiciona na tabela de usuarios que ele já pode ter varios checkIns 
+note que ele traz um array por que pode ter varios checkIns.
+
+     CheckIns       CheckIn[] 
+
+- Eu fiz a mesma coisa para a academa gym Gym salvando ele também já criou o 
+código do relacionamento.
+
+- Após salvaro código e criar todos os relacionamentos rodamos a migrate para executar o código no banco. 
+      npx prisma migrate dev
+
+- Após rodar o código e fazer as alterações no banco de dados eu posso abrir 
+o prisma studio e ver que ele vai ter a nova coluna user_id, gym_id além disso 
+o prisma vai mostrar também colunas com os nomes dos relacionamentos que foram
+feitos com aqui o user e o gym, se for na tabela de usuários note que também tem
+uma coluna que da para ver os checkIns dele. 
+
+- Em seguida foram feitos testes cadastrando usuarios e academias e fazendo 
+checkins o prisma studio ajuda bastante nesses testes.
+
+
+
+ 
+
+
+
