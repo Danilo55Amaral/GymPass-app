@@ -633,9 +633,86 @@ uma coluna que da para ver os checkIns dele.
 - Em seguida foram feitos testes cadastrando usuarios e academias e fazendo 
 checkins o prisma studio ajuda bastante nesses testes.
 
+# Caso de uso e design patterns 
 
+# Criação de um usuário 
 
- 
+- Aqui criamos rota de criação de cadastro de um novo uauário, utilizando alguns 
+design patterns e alguns principios do SOLID, criamos uma rota bem simple de 
+criação de um usuário dentro do back end.
+
+- Dentro do meu app.ts eu criei uma rota post na qual dei o nome de users 
+passando uma função que recebe request e replay, dentro dessa função eu vou 
+cadastrar um usuario,  estamos utilizando o zod e vamos usar para fazer a 
+validação desse usuário, isso para que o usuário não envie dados errados a 
+partir dessa rota, com o zod eu passo como se fosse uma tipagem que valida esses 
+dados que vou colocar, no email também existe uma validação do zod para email e 
+posso adicionar também.
+
+- Em seguida eu pegoesses dados e utilizo um parse para fazer um request.body
+para fazer a validação, o parse vai dar um throw automatico em caso de erro 
+nehum código posterior vai ser executado, caso a validação falhe.
+
+- Logo abaixo eu pego esses dados e faço a criação de um usuário, foi utilizado 
+um await, antes eu separei a conexão do banco criando uma pasta separada dentro de 
+src chamada lib com um arquivo chamado prisma.ts nesse arquivo eu exporto uma 
+constante chamada prisma que é a conexão com o banco eu devo passar o PrismaClient 
+e devo importa-lo. 
+
+- De volta a minha rota eu utilizo no await esse prisma que acabei de criar dentro 
+da pasta lib, devo importa-lo, note que quando utilizo um ponto e dou um crtl + 
+espaço ele já encontra todas as tabelas domeu banco de dados, passei ta tabela 
+user e um objeto create passando os dados data. 
+
+- Como foi utilizado um await é necessário fazer que esse metodo seja async 
+no final é retornado um status 201 com uma send resposta vazia.
+
+app.post('/users', async (request, reply) => {
+    const registerBodySchema = z.object({
+        name: z.string(),
+        email: z.string().email(),
+        password: z.string().min(6),
+    })
+
+    const { name, email, password } = registerBodySchema.parse(request.body)
+
+    await prisma.user.create({
+        data: {
+            name,
+            email,
+            password_hash: password,
+        },
+    })
+
+    return reply.status(201).send()
+})
+
+ - Voutestar rodando a aplicação com o comando npm run start:dev
+
+ - Com a aplicação rodando podemos testar essa rota no insomnia, dentro foi 
+ criado uma New Request Collection para testar as rotas desse projeto, chamei 
+ de Ignite API SOLID Node.js , eu crio uma nova http request vou chamar de 
+ Create user, do tipo POST, Vou passar a minha url da rota, selecionar para 
+ enviar um JSON, em seguida eu escrevo um Json com os dados da minha rota e 
+ testo.
+
+ - Após o teste posso checar também na base de dados se o novo usuário foi 
+ inserido na base de dados.
+
+ - Uma coisa interessante é que na configuração de conexão do prisma podemos 
+ passar um objeto de configurações e um desses objetos de configurações é o log
+ dentro desse objeto da para passar vários tipos de logs, aqui foi colocado 
+ o query esse log faz com que quando um usuário for criado ele vai mostrar no 
+ log da aplicação as queries que foram geradas. Essas Queryes o prisma faz de 
+ forma automatizada.
+
+ - Para habilitar esse log apenas em ambiente de desenvolvimento eu vou utilizar 
+ o env passando que se o NODE_ENV for dev então p log vai ser query se não vai ser 
+ vazio.
+
+export const prisma = new PrismaClient({
+    log: env.NODE_ENV == 'dev' ? ['query'] : [], 
+})
 
 
 
