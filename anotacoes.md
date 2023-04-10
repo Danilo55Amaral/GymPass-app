@@ -714,5 +714,91 @@ export const prisma = new PrismaClient({
     log: env.NODE_ENV == 'dev' ? ['query'] : [], 
 })
 
+# Controller de registro
+
+- É interessante separar toda estrutura de código existente em cada rota da 
+aplicação, que está no arquivo app.ts, cada parte que a aplicação toca no momento 
+em que ela faz uma operação seja banco de dados,validação, requisição e resposta 
+ou qualquer outra coisa, tudo isso é interessante separar em mais arquivos, aqui 
+separamos de uma forma que a manuntenção desse código seja beneficiada.
+
+## Controller 
+
+- vem de MVC - Model / View / Controller 
+
+- O Controller é o nome dado para a função que lida com a entrada de dados 
+de uma requisição HTTP e devolve uma resposta de alguma forma. 
+
+- Geralmente o Controller está associado a alguns desses framework como Fastify,
+express, Nest e note que essas ferramentas são Contrllers. 
+
+- Foi pego a função de dentro de app que é o Controller que é a função que recebe 
+a requisição e devolve uma resposta, essa função foi movida para outra pasta, 
+dentro de src foi criada uma pasta chamada http e tudo que for relacionada a 
+requisição, resposta e toda a parte http da aplicação vai ficar nessa pasta, 
+dentro foi criada uma outra pasta chamada controllers e dentro foi criado o 
+arquivo do primeiro controller onde foi colocada essa função que foi copiada de app
+esse arquivo foi chamado de register.ts e dentro desse arquivo eu exporto essa
+função, como está em outro arquivo é necessário fazer algumas importações na parte 
+de request e reply como esse arquivo não recohece esses dados deve-se importar o 
+FastifyRequest e o FastifyReply e passar como tipagem.
+
+import { prisma } from "@/lib/prisma";
+import { FastifyRequest, FastifyReply } from "fastify";
+import { z } from "zod";
+
+export async function register(request: FastifyRequest, reply: FastifyReply) {
+    const registerBodySchema = z.object({
+        name: z.string(),
+        email: z.string().email(),
+        password: z.string().min(6),
+    })
+
+    const { name, email, password } = registerBodySchema.parse(request.body)
+
+    await prisma.user.create({
+        data: {
+            name,
+            email,
+            password_hash: password,
+        },
+    })
+
+    return reply.status(201).send()
+}
+
+- No arquivo de app no local onde estava a função podemos importar o register como
+segundo parametro para post.  
+
+- As rotas da aplicação estão todas dentro do arquivo app e isso não é o ideal 
+por que a aplicação pode crescer bastante e atingir 200, 300 rotas por isso 
+é interessante separar isso também, dentro de http foicriado um arquivo chamado 
+routes.ts e movemos para la a rota da aplicação. Esse routes.ts vai funcionar como 
+um pluguin do Fastify e por isso ele precisa ser uma função que chamei de appRoutes
+essa função recebe o app do Fastify e seu tipo é FastifyInstance e dentro dessa 
+função eu colo minhas rotas.
+
+import { FastifyInstance } from "fastify";
+import { register } from "./controllers/register";
+
+export async function appRoutes(app: FastifyInstance) {
+    app.post('/users', register)
+}
+
+- Dentro de app eu chamo o register e dentro passo o appRoutes.
+
+import fastify from "fastify";
+import { appRoutes } from "./http/routes";
+
+export const app = fastify()
+
+app.register(appRoutes)
+
+- Após salvar eu reinicio o servidor e podemos testar criando um novo usuário no 
+insonmia.
+
+- Foi feita também a separação de código de dentro do controller que criamos no 
+arquivo register.ts, isso por que temos que enxergar a aplicação em camadas 
+
 
 
