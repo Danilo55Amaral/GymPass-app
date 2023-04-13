@@ -800,5 +800,71 @@ insonmia.
 - Foi feita também a separação de código de dentro do controller que criamos no 
 arquivo register.ts, isso por que temos que enxergar a aplicação em camadas 
 
+# Hash da senha e validação 
 
+## BcryptJs
+
+- Foi instalado o Bcrypt rodando o seguinte comando   npm i bcryptjs  
+
+- Como essa biblioteca não é escrita em TypeScript énecessário instalar esse
+pacote separadamente com o comando    npm i -D @types/bcryptjs
+
+- Esse hash vai gerar um valor que é impossivel de reverter ao formato original 
+esse dado preciso ser gerado com base em alguma coisa que fica no segundo paramtro
+do metodo.
+
+- Essa é a biblioteca mais comum no node para fazer hash de senhas aqui 
+dentro do arquivo de register.ts foi importado de dentro de bcryptjs o 
+modulo hash , em seguida foicriado o password_hash de forma separada 
+utilizando o metodo has que foi importado do bcrypt esse metodo retorna 
+uma promise e por isso podemos utiliza um await para aguardar esse metodo
+o primeiro parametro que é enviado para o hash é a senha de usuario e o segundo 
+paramtro pode ser o 'asd' que é algo unico e aleatorio e a senha pode ser gerada 
+a partir dele,  ou pode ser passado um numero de rounds isso pode ser entendido
+como o número de vezes que vai ser gerado o hash, cada round que é colocado a mais
+fica mais dificil para que esse hash seja quebrado ou descoberto, porém para casa
+round que for colocado a mais ficará mais pesado para a aplicação gerar o hash
+dessa senha.
+
+import { hash } from "bcryptjs";
+
+const password_hash = await hash(password, 6)
+
+- PS - Se esse hash é usado para alguma coisa que vai acotnecer muitas vezes ou 
+seja muitas requisições não podemos colocar um número alto de rounds no hash como
+6 por exemplos por que vai pesar na aplicação, vai gastar muito processamento.
+na maioria das aplicações web 6 rounds é utilizado.
+
+- Podemos testar se nosso algoritimo de criptografia ta funcionando criando um 
+novo usuario no isomnia e depois checando o campo de senha na base de dados e ver
+se foi gerado hash da senha.
+
+- Esse hash não pode ser descriptografado isso não é possivel, para checar se o 
+hash é valido, quando o usuário fazer login com a senha essa senha vai ser pega e 
+vai gerar um hash também e vai ser comparado se esse hash gerado é o mesmo que 
+está salvo no banco de dados. Ou seja não é possivel fazer o caminho inverso e 
+descriptografar mas é possivel durante o login gerar o hash novamente e ver se
+eles batem.
+
+## Resolvendo problema de email duplicado
+
+- Note que se for cadastrado um usuario com o email que já existe vai da um erro 
+500, para resolver isso é bom fazer uma checagem para ver se tem um usuario com o 
+mesmo email, para isso eu criei uma contante userWithSameEmail e utilizei o metodo
+findUnique() do proprio prisma, esse metodo procura um registro unico na tabela 
+ai podemos passar um where para filtrar qual campo quer procurar o registro 
+é importante saber que esse metodo só consegue buscar registros em campos que 
+são ou unique ou chaves primarias, sem seguida eu crio um if estabelecendo que
+se já exixtir um usuario com o mesmo email eu posso retornar um status 409 que
+é para conflito quando se tem dados duplicados.
+
+const userWithSameEmail = await prisma.user.findUnique({
+        where: {
+            email,
+        },
+    })
+
+    if (userWithSameEmail) {
+        return reply.status(409).send()
+    }
 
