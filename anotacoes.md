@@ -993,6 +993,97 @@ de criação de usuário, esse metodo é uma promise e por isso utilizamos um aw
 - Podemos testar se está funcionando criando um novo usuário no insomina e 
 verificando na base de dados se o usuário foi criado.
 
+# Inversão de dependências 
+
+- Umas das motivações para utilizar repositorios é conseguir ter a possibilidade 
+de conseguir migrar de ferramenta de banco de dados ou qualquer outra coisa 
+que se esteja utilizando na aplicação.
+
+## SOLID
+
+- São 5 principios na programação que foi criado no Clean Code. 
+
+## D - Dependency Inversion Principle 
+
+- Esse principio cabe bem nessa situação que mexemos na aplicação que o caso de 
+uso de registro de usuários ele possue uma dependencia no repositorio do Prisma 
+o caso de uso depende do repositorio do Prisma se esse repositorio do Prisma 
+deixar de existir o caso de uso para de funcionar por isso é uma dependencia. 
+
+- No princípio da inversão de dependencia isso muda um pouco em como o caso de 
+uso ou qualquer outro arquivo da aplicação tenha acesso a suas dependencias, esse
+principio se inverte a ordem de como a dependencia vai chegar nesse caso de uso
+ou seja ai invés do caso de uso estanciar as dependencias que ele precisa, ele 
+vai receber essas dependencias como parametro. 
+
+- Geralmente utilizamos classes para isso, foi criada uma classe RegisterUseCase
+dentro do meu register.ts de use-cases e foi pego todo o metodo registerUseCase e 
+foi colocado nessa classe também foi dado outro nome ao metodo.
+
+- Caca classe de caso de uso vai ter apenas um unico metodo, a classe pode ter um 
+constructor e dentro dele pode ser recebida as dependncias ou seja ao invés da 
+classe estanciar as dependencias ela vai receber como parametro e por isso que 
+é inversão de depencia.
+
+- Dentro do constructor vai ser recebido o repository e por isso colocamos 
+userRepository , quando queresmo que um parametro que estamos recebendo no 
+constructor automaticamente vire uma propriedade da classe basta colocar 
+private ou public, posso colocar por enquanto any como tipagem.
+
+- Posso remover a parte que estou instanciando o repositorio. 
+
+- E no meu metodo create eu vou receber o usersRepository.
+
+export class RegisterUseCase {
+    constructor(private usersRepository: any) {}
+    async execute({
+        name,
+        email,
+        password,
+    }: RegisterUseCaseRequest) {
+        const password_hash = await hash(password, 6)
+    
+        const userWithSameEmail = await prisma.user.findUnique({
+            where: {
+                email,
+            },
+        })
+    
+        if (userWithSameEmail) {
+            throw new Error('E-mail alread exists.')
+        }
+    
+        await this.usersRepository.create({
+            name,
+            email,
+            password_hash,
+        })
+    }
+}
+
+- Essa classe deve ser exportada 
+
+- Note que nessa classe agora ela não está mais associada ao prisma e agora o 
+arquivo que precisar desse caso de uso no caso aqui é o register.ts do controller
+Essa classe vai ser usada nesse arquivo e para isso ela precisa ser instanciada 
+e é necessário passar como parametro quais são as depencias, aqui é pego o 
+prismaUsersRepository  e é passado como parametro para o registerUseCase e 
+utilizamos o metodo execute.
+
+ try {
+        const usersRepository= new PrismaUsersRepository()
+        const registerUseCase = new RegisterUseCase(usersRepository)
+
+        await registerUseCase.execute({
+            name,
+            email,
+            password,
+        })
+    } catch (err) {
+        return reply.status(409).send()
+    }
+
+    return reply.status(201).send()
 
 
 
