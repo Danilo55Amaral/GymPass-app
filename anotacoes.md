@@ -868,3 +868,75 @@ const userWithSameEmail = await prisma.user.findUnique({
         return reply.status(409).send()
     }
 
+# Caso de uso de registro
+
+- Aqui é separada do controler a parte que é igual independente de que ela 
+vai ser executada por que ela pode ser usada em outras coisas futuramente ela  
+pode ser separada deixando o código mais limpo e de fácil manutenção. 
+
+- Para isso foi criada uma pasta chamada use-cases que é para casos de usos 
+dentro dessa pasta foi criado um arquivo chamado register.ts dentre desse arquivo 
+foi criada uma função e foipassada a parte que queremos separar do outro arquivo 
+de register do controller. É importante fazer as importações necessárias e 
+transformar essa função em uma função async. 
+
+- Também foi necessário criar uma interface para receber alguns dados como name, 
+email e password.
+
+import { prisma } from "@/lib/prisma";
+import { hash } from "bcryptjs";
+
+interface RegisterUseCaseRequest {
+    name: string
+    email: string
+    password: string
+}
+
+export async function registerUseCase({
+    name,
+    email,
+    password,
+}: RegisterUseCaseRequest) {
+    const password_hash = await hash(password, 6)
+
+    const userWithSameEmail = await prisma.user.findUnique({
+        where: {
+            email,
+        },
+    })
+
+    if (userWithSameEmail) {
+        throw new Error('E-mail alread exists.')
+    }
+
+    await prisma.user.create({
+        data: {
+            name,
+            email,
+            password_hash,
+        },
+    })
+}
+
+-Não faz sentido utilizar aqui dentro o reply por que ele é algo especifico da 
+parte HTTP por isso essa parte não faz sentido aqui dentro já que o objetivo foi 
+separar essa parte do código, por isso vamos reescrever essa parte de outra forma 
+utilizando um trow , porém dentro do Register na parte de contrller quando é chamado esse caso de uso da para colocar ele por um try catch e no catch do erro
+colocar a parte do reply com o status 409.
+
+  try {
+        await registerUseCase({
+            name,
+            email,
+            password,
+        })
+    } catch (err) {
+        return reply.status(409).send()
+    }
+
+- O que foi feito aqui foi separar a parte lógica da fucionalidade em si da parte
+que é especifica da camada de HTTP com isso em qualquer lugar da aplicação for 
+necessário criar um usuário basta chamar o caso de uso que foi criado. 
+
+
+
