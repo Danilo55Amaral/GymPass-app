@@ -938,5 +938,62 @@ colocar a parte do reply com o status 409.
 que é especifica da camada de HTTP com isso em qualquer lugar da aplicação for 
 necessário criar um usuário basta chamar o caso de uso que foi criado. 
 
+- A motivação de ter separado o caso de uso foi para conseguir reaproveitar a 
+lógica de criação do usuário entre várias funcionalidades da aplicação que 
+precisam criar um usuário, todas elas vão chamar o mesmo caso de uso que lida com 
+toda a parte comum entre todos os momentos em que for necessário criar um usuario 
+na aplicação.
+
+## Repository Pattern 
+
+- Esse patern serve para abstrair a parte de conexão de requisições que são feitas
+ao banco de dados, toda essa parte de comunicação com o banco de dados em um 
+arquivo separado. 
+
+- Foi criada uma pasta chamada repositories dentro dela foi criado umarquivo 
+chamado prisma mais o nome da tabela do banco de dados que vou utilizar assim
+prisma-users-repository.ts. 
+
+- Dentro desse arquuivo eu criei e exportei uma classe e dentro dela vou ter
+vários metodos que vão interceptar e vão ser as portas de entrada para qualquer
+operação que for ser feita no banco de dados ou seja todas as operações do banco 
+de dados sempre vão passar pelos respositorios. 
+
+- Foi criado um metodo create que recebe data(alguns dados) e ele executa o código 
+de criação de usuário que foi copiado dentro do register que cria o usuário no 
+banco de dados, para tipar os dados desse metodo eu posso utilizar um recursodo 
+proprio prisma e utilizar o Prisma.UserCreateInput, com isso dá também para passar
+o data inteiro sem precisar especificar o name, email e o passowrd, isso pode ser
+colocado em uma variavel e depois retornar essa variável de dentro e com isso o 
+caso de uso que chamou esse metodo se ele quiser trabalhar com o usuário recem 
+criado ele pode.
+
+export class PrismaUsersRepository {
+    async create(data: Prisma.UserCreateInput) {
+        const user = await prisma.user.create({
+            data,
+        })
+
+        return user
+    }
+}
+
+- Após isso voltamos ao register e necessário criar variavel para instanciar 
+essa classe, em seguida eu passo o metodo create para essa variavel com os dados 
+de criação de usuário, esse metodo é uma promise e por isso utilizamos um await.
+
+ const prismaUsersRepository = new PrismaUsersRepository()
+
+    await prismaUsersRepository.create({
+        name,
+        email,
+        password_hash,
+    }) 
+
+- Podemos testar se está funcionando criando um novo usuário no insomina e 
+verificando na base de dados se o usuário foi criado.
+
+
+
 
 
