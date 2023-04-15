@@ -1178,6 +1178,68 @@ const userWithSameEmail = await this.usersRepository.findByEmail(email)
 prisma. Fizemos mais um teste no insomnia para checar se está funcionando 
 normalmente.
 
+# Lidando com erros do use case 
+
+- Uma das coisas que podem ser melhoradas na aplicação é a parte de erros 
+que são originados de dentro dos casos de usos, no momento só existe um throw
+new Error passando uma mensagem de erro, dentro do controller existe apenas um
+try catch por volta de todo o use case e para todo o tipo de erro está sendo 
+retornado um status 409 . 
+
+- Isso pode ser ruim no futuro quando a aplicação crescer por que é comum os 
+casos de uso, serviços a funcionalidades da aplicação, terem vários tipos de 
+condicionais, validações e possiveis erros que podem ocorrer e serem retornados
+é interessante ter uma alguma forma de dentro do controller para fazer alguma 
+tratativa para cada tipo de erro diferente conseguir ter uma resposta diferente 
+um status code diferente para cada um dos erros.
+
+- Dentro da pasta de use-cases criamos uma nova pasta chamada errors e dentro dela
+foi criado um arquivo para cada tipo de erro que possa ter na aplicação. foi 
+criado um arquivo para esse erro que já estamos tratando, o arquivo criado se 
+chama user-already-exists-error.ts 
+
+- Dentro desse arquivo eu exporto uma classe que chamei de UserAlreadyExistsError
+essa classe extends a classe Error tradicional do JavaScript, dentro dessa classe
+tem um constructor que chama um metodo super que é o metodo constructor da classe
+error, nese metodo super podemos enviar uma mensagem.
+
+export class UserAlreadyExistsError extends Error {
+    constructor() {
+        super('E-mail already exists.')
+    }
+}
+
+- Com isso voltamos ao caso de uso e ao invés de da um trow new Error vamos 
+utilizar o throw passando a classe que foi criada.
+
+ if (userWithSameEmail) {
+     throw new UserAlreadyExistsError()
+}
+
+- Agora dentro do controller na parte do catch fazemos a condição que se o err 
+for uma instancia da classe UserAlreadyExistsError vai ser retornado o status 409
+se não por enquanto podemos retornar um erro status 500.
+
+if (err instanceof UserAlreadyExistsError) {
+            return reply.status(409).send()
+        }
+
+        return reply.status(500).send()
+
+- Após isso podemos testar no insomnia. 
+
+- Com isso temos uma maneira de tratar cada tipo de erro dentro do controller 
+e retornar um status diferente.
+
+- Eu posso melhorar ainda mais passando dentro do send um message passando a 
+mensagem.
+
+ if (err instanceof UserAlreadyExistsError) {
+            return reply.status(409).send({ message: err.message })
+        }
+
+
+
 
 
 
