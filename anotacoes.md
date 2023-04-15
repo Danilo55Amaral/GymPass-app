@@ -1085,6 +1085,99 @@ utilizamos o metodo execute.
 
     return reply.status(201).send()
 
+# Interface do repositório
+
+- Note que dentro do caso de uso no arquivo register a tiágem do userRepository 
+ainda está como any, e não queremos utilzar tipagem do prisma nesse arquivo pois 
+a ideia é ele ser indenpende, para resolver isso foi criado um arquivo de tipagem
+dentro de repositories chamado users-repository.ts, dentro desse arquivo eu 
+construir uma interface que vai dizer quais metodos vão existir no repositorio 
+e quais parametros eles recebem, essa interface deve ser exportada.
+
+import { Prisma, User } from "@prisma/client";
+
+export interface UsersRepository {
+    create(data: Prisma.UserCreateInput): Promise<User>
+}
+
+- Vontando ao caso de uso no arquivo de register eu vou utilizar essa interface 
+para tipar o constructor.
+
+constructor(private usersRepository: UsersRepository) {}
+
+- Note que dentro do arquivo register do controller se o metodo create não for
+implementado ele não dará nenhum erro porém esse metodo é necessário, por isso 
+dentro do repositorio que queremos que siga essa interface devemos implementar 
+por isso dentro do arquivo prisma-users-repository.ts eu implemento essa interface
+também.
+
+export class PrismaUsersRepository implements UsersRepository {
+    async create(data: Prisma.UserCreateInput) {
+        const user = await prisma.user.create({
+            data,
+        })
+
+        return user
+    }
+}
+
+- Dessa forma se o metodo create não for informado ele vai dar erro pedindo que 
+seja implementado.
+
+- A pasta repositories foi organizada e dentro dela foi criada uma pasta chamada 
+prisma e todos os repositorios especificos do prisma foi jogado para essa pasta.
+
+- Foi feito um novo teste no insomnia para ver se a aplicação continua 
+cadastrando normalmente.
+
+- Como não queremos que o caso de uso não tenha nenhuma referencia ao prisma e
+seja completamente independente também movemos a parte do metodo de buscar um 
+usuário pelo email lá para dentro do repositorio, para começar dentro da 
+interface no arquivo users-repository.ts  eu crio um novo metodo dentro da 
+interface chamado findByEmail que é para encontrar por Email, esse metodo 
+recebe email e devolve através de uma Promise um usuário se ele não encontrar 
+um usuário ele retorna nulo.
+
+export interface UsersRepository {
+    findByEmail(email: string): Promise<User | null>
+    create(data: Prisma.UserCreateInput): Promise<User>
+}
+
+- Agora Voltando ao repositorio do prisma como ele está implementando a 
+interface ele já vai gerar um erro pedindo para ser implementado o metodo 
+que falta.  Eu apenas implemento esse metodo passando a parte do código que busca
+o usuário por email que queremos separar do nosso caso de uso. Esse metodo vira 
+async e eu passo essa parte do código que quero mover, posso renomear para user.
+
+export class PrismaUsersRepository implements UsersRepository {
+    async findByEmail(email: string) {
+        const user = await prisma.user.findUnique({
+            where: {
+                email,
+            },
+        })
+
+        return user
+    }
+    
+    async create(data: Prisma.UserCreateInput) {
+        const user = await prisma.user.create({
+            data,
+        })
+
+        return user
+    }
+}
+
+- Agora dentro do meu caso de uso eu apenas coloco para utilizar o metodo do 
+repositorio.
+
+const userWithSameEmail = await this.usersRepository.findByEmail(email)
+
+- Agora note que dentro do caso de uso não tem mais nenhuma dependencia do 
+prisma. Fizemos mais um teste no insomnia para checar se está funcionando 
+normalmente.
+
 
 
 
