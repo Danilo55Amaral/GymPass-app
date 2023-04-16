@@ -1306,6 +1306,72 @@ app.setErrorHandler((error, _request, reply) => {
 - Ps Como o request é um parametro que não está sendo utilizado colocamos ele 
 com um _ para indicar isso.
 
+# Design Patterns e Testes 
+
+# Configurando o Vitest
+
+- Testes dentro do back end não é algo opcional é necessário se trabalhar com 
+testes desde o inicio, quando se está trabalhando nas regras de negocio em si
+os testes são fundamentais. 
+
+## Vitest 
+
+- É a ferramenta que utilizamos para escrever os testes para instalar basta rodar 
+o comando abaixo   
+
+    npm i vitest -D 
+
+- Podemos já instalar com um pluguim que vai ser utilizado com issopara instalar 
+basta adicionar 
+
+    npm i vitest vite-tsconfig-paths - D 
+
+- Após instalar criamos na raiz do projeto um arquivo chamado vite.config.ts 
+dentro desse arquivo é necessário exportar uma função como padrão chamada 
+defineConfig e essa função importamos do vitest/config , essa função recebe 
+parametros e aqui vamos utilizar o plugin, e nesse plugin foi passado o 
+tsconfigPaths que importamos do vite-tsconfig-paths  isso é necessário 
+para o Vitest entender todos os tipos de importações que fazemos aqui tipo com o
+@ e por isso também instalamos o pluguin  junto ao Vitest.
+
+import { defineConfig } from  "vitest/config";
+import tsconfigPaths from "vite-tsconfig-paths"; 
+
+export default defineConfig({
+    plugins: [tsconfigPaths()],
+})
+
+## Criando Scripts para rodar os testes 
+
+- Dentro do package.json criamos um script para rodar os testes, foi configurando
+dois scripts "test" para rodar os testes de um única vez e "test:watch" para ficar
+monitorando e rodando sempre que uma alteração for feita ele vai executar de 
+forma automatica os testes.
+
+    "test": "vitest run",
+    "test:watch": "vitest"
+
+- Para testar dentro da pasta de use-cases eu crio um arquivo chamado 
+register.spec.ts que é o arquivo de teste dentre desse arquivo foi  importado
+o test e chamamos para criar o primeiro teste, o nome do teste é chack if it 
+works que é testando se está tudo funcionando. Nesse teste eu escrevi que 
+espero que 2 + 2 seja igual a 4 
+
+import {expect, test } from "vitest"
+
+test('check if it works', () => {
+    expect(2 + 2).toBe(4)
+})
+
+- Em seguida executamos o teste para ver se está funcionando. 
+
+## Comando para rodar os testes
+    npm run test 
+
+## Comando para rodar os testes e ficar monitorando 
+    npm run test:watch 
+
+
 
 
 
