@@ -1238,6 +1238,74 @@ mensagem.
             return reply.status(409).send({ message: err.message })
         }
 
+# Handler de erros global
+
+- Uma das coisas que ainda falta é a parte de lidar com outros tipos de erros 
+na aplicação, como se acontecer algum tipo de erro dentro do caso de uso que 
+não é um erro conhecido ou  um erro que não foi tratado, note que temos um 
+status 500 para outros tipos de erro, porém não traz informações. 
+
+- Dentro do arquivo de register.ts no controllers da aplicação a parte que 
+retorna um status 500 vou substituir por um trow err note que com isso a 
+aplicação melhora a tratativa desse erro com o fastify que já identifica
+porém da para melhorar mais. 
+
+try {
+        const usersRepository= new PrismaUsersRepository()
+        const registerUseCase = new RegisterUseCase(usersRepository)
+
+        await registerUseCase.execute({
+            name,
+            email,
+            password,
+        })
+    } catch (err) {
+        if (err instanceof UserAlreadyExistsError) {
+            return reply.status(409).send({ message: err.message })
+        }
+
+        throw err 
+    }
+
+    return reply.status(201).send()
+
+- Dentro do arquivo app.ts na raiz da aplicação foi chamada uma função chamada 
+setErrorHandler na qual recebe uma função essa função tem acesso ao error e 
+também recebe a requisição request e a reply, em seguida foimontado um if que 
+se o error for uma instancia de ZodError ele irá retornar um status 400 com um 
+send passando uma message, e um issues passando error.format que é um metodo que 
+o zod utiliza para formatar os erros.
+
+app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof ZodError) {
+        return reply
+        .status(400)
+        .send({ message: 'Validation error.', issues: error.format() })
+    }
+
+    return reply.status(500).send({ message: 'Internal server error.' })
+})
+
+- Foi montado um outro if que se o NODE_ENV for diferente de production ele vai 
+dar um concole.error passando o error com isso quando der algum erro ele vai 
+retornar no terminal  informações do erro.
+
+app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof ZodError) {
+        return reply
+        .status(400)
+        .send({ message: 'Validation error.', issues: error.format() })
+    }
+
+    if (env.NODE_ENV !== 'production') {
+        console.error(error)
+    }
+    return reply.status(500).send({ message: 'Internal server error.' })
+})
+
+- Ps Como o request é um parametro que não está sendo utilizado colocamos ele 
+com um _ para indicar isso.
+
 
 
 
