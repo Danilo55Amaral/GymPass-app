@@ -1371,8 +1371,211 @@ test('check if it works', () => {
 ## Comando para rodar os testes e ficar monitorando 
     npm run test:watch 
 
+# Primeiro teste Unitário 
+
+- Aqui escrevemos os testes para testar a funcionalidade o requisito funcional da
+aplicação de cadastro o caso de uso, dentro do arquivo de register.ts em use-cases
+ja conseguimos analisar algumas coisas que podem ser testadas, olhando os 
+requisitos e regras de negicios da aplicação dá para ver que cada requisito ou 
+regra de negócio vai exigir pelo menos um teste. 
+
+- Note que analisando o arquivo register do caso de uso e as regras de negócios
+note que já podemos fazer pelo menos 3 testes nesse arquivo, um teste para ver 
+se é possivel cadastrar o usuário, um teste para validar que um usuário não pode 
+se cadastrar com emails duplicados e um teste para validar se a senha do usuário 
+está sendo criptografada dentro do banco de dados. 
+
+## describe e it 
+- PAra iniciar criamos o teste para testar a senha, dentro do meu arquivo de teste
+register.spec.ts eu iniciei importanto o describe que serve para categorizar os 
+testes ou seja todos os testes que estiverem dentro desse describe eles serão 
+categorizados e ficarão visiveis ali.
+
+- it é também utilizado para escrever os testes assim como o test 
+
+- Essa primeira categoria de testes eu nomeei de Register Use Case e o primeiro 
+teste da categoria eu escrevi como should hash user password upon registration 
+que sigifica a senha do usuário deve ser hash assim que ele se cadastrar. 
+
+- Eu instanciei o meu caso de uso registerUseCase ele vai dar um erro por que 
+é necessário instanciar também o prismaUserRepository, com isso ele vai parar de
+dar o erro, em seguida eu fiz um await executando o registerUseCase enviando 
+dados de um cadastro, como o await foi utilizado deve colocar o async na função.
+
+describe('Register Use Case', () => {
+    it('should hash user password upon registration', async () => {
+        const prismaUsersRepository = new PrismaUsersRepository()
+        const registerUseCase = new RegisterUseCase(prismaUsersRepository)
+
+        await registerUseCase.execute({
+            name: 'Albert Einstein',
+            email: 'einstein@example.com',
+            password: '123456',
+        })
+    })
+})
+
+- Dentro do meu arquivo de register no meu caso de uso eu refatorei alterando a 
+parte de create retornando como usuário user para isso eu criei uma const user 
+e retornei como objeto pois se caso depois eu necessite retornar mais coisas 
+não será necessário alterar essa estrutura basta retornar no objeto.
+
+const user = await this.usersRepository.create({
+            name,
+            email,
+            password_hash,
+        })
+
+        return {
+            user,
+        }
+
+- Em seguida eu crie uma interface chamada RegisterUseCaseResponse informando 
+qual é o  tipo de resposta que esse caso de uso vai ter, ele retornar um User 
+que vem do @prisma/client
+
+interface RegisterUseCaseResponse {
+    user: User
+}
+
+- Em seguida eu tipei o execute informando que ele devolve uma Promise com a 
+interface de resposta.
+
+export class RegisterUseCase {
+    constructor(private usersRepository: UsersRepository) {}
+    async execute({
+        name,
+        email,
+        password,
+    }: RegisterUseCaseRequest): Promise<RegisterUseCaseResponse> {
+        const password_hash = await hash(password, 6)
+    
+       const userWithSameEmail = await this.usersRepository.findByEmail(email)
+    
+        if (userWithSameEmail) {
+            throw new UserAlreadyExistsError()
+        }
+    
+        const user = await this.usersRepository.create({
+            name,
+            email,
+            password_hash,
+        })
+
+        return {
+            user,
+        }
+    }
+}
+
+- Agora podemos voltar ao arquivo de testes eu posso desestruturar o user 
+gerado e dentro do user temos acesso ao password_hash, com esse tipo de hash 
+que foi utilizado não podemos descriptografar essa senha mas podemos gerar um 
+novo hash e comparar com o primeiro gerado e verificar se vão bater. 
+
+- Para isso eu crio uma variavel isPasswordCorrectlyHashed que siginifica 
+a senha foi corretamente hashed em seguida foi utilizado o metodo compare 
+que vem de dentro do bcrypt esse metodo compara uma senha com um hash já 
+existente e sendo a senha que originou o hash ele vai retornar true.
+
+- Com isso eu escrevo que eu espero que isPasswordCorrectlyHashed seja 
+true.
 
 
+describe('Register Use Case', () => {
+    it('should hash user password upon registration', async () => {
+        const prismaUsersRepository = new PrismaUsersRepository()
+        const registerUseCase = new RegisterUseCase(prismaUsersRepository)
+
+        const { user } = await registerUseCase.execute({
+            name: 'Albert Einstein',
+            email: 'einstein@example.com',
+            password: '123456',
+        })
+
+        const isPasswordCorrectlyHashed = await compare(
+            '123456',
+            user.password_hash, 
+        )
+
+        expect(isPasswordCorrectlyHashed).toBe(true)
+    })
+})
+
+- Note que ao rodar o teste pela segunda vez vai gerar um erro pois o email 
+vai ficar duplicado por já ter sido criado um usuário com o mesmo email no
+teste anterior. Vamos resolver esse problema a seguir 
+
+## Testes Unitários 
+
+- Esse tipo de teste testa uma unidade isolada do código como estamos 
+criando testes unitários para a parte de cadastro da aplicação, a ideia 
+é conseguir testar a funcionalidade de cadastro da aplicação totalmente 
+descocnectada das suas dependencias, quando se escreve testes unitários 
+sempre se quer testar um único arquivo sem as suas conexões com as outras
+dependencias com  as outras camadas da aplicação. 
+
+- A partir do momento que estamos usando o caso de uso de cadastro e ele tem
+uma dependencia UsersRepository e passamos para ele o PrismaUsersRepository
+já não temos mais um teste unitário, esse teste que escrevemos pode ser 
+considerado um teste de integração por que estamos testando como o caso de 
+uso está se conectando com o prisma. 
+
+- Teste unitário nunca vai tocar em banco de dados, nunca vai tocar em 
+camadas externas da aplicação. 
+
+## Desacoplando o teste do prisma e torando um teste unitário 
+
+- A princípal vantagem de utilizar inversão de dependencia é na hora de 
+escrever testes, vou substituir dentro do teste o PrismaUsersRepository por 
+um objeto que vai simular o repositorio, nesse objeto eu criei um metodo 
+create passando dados, esse metodo vai retornar um usuário ficticio, também
+é necessário utilizar o metodo findByemail retornando nulo.
+
+describe('Register Use Case', () => {
+    it('should hash user password upon registration', async () => {
+        const registerUseCase = new RegisterUseCase({
+            async findByEmail(email) {
+                return null 
+            },
+
+            async create(data) {
+                return {
+                    id: 'user-1',
+                    name: data.name,
+                    email: data.email,
+                    password_hash: data.password_hash,
+                    created_at: new Date(),
+                }
+            },
+        })
+
+        const { user } = await registerUseCase.execute({
+            name: 'Albert Einstein',
+            email: 'einstein@example.com',
+            password: '123456',
+        })
+
+        const isPasswordCorrectlyHashed = await compare(
+            '123456',
+            user.password_hash, 
+        )
+
+        expect(isPasswordCorrectlyHashed).toBe(true)
+    })
+})
+
+- Note que agora em momento nenhum momento batemos no banco de dados 
+passamos para ele um metodo ficticio vazio,  quando criamos testes 
+unitarios geralmente temos muitos testes unitários na aplicação 
+se todos os testes unitários baterem no banco de dados ficarão lentos 
+por que testes que batem em banco de dados são mais lentos, é interessante 
+em testes unitários ter muita velocidade por que se tem muitos testes 
+e que não ecista conflito entre esses testes. 
+
+- Note que estamos testando se a senha do usuário foicriptografada sem 
+precisar do banco de dados, isso por que a funcionalidade de hash da senha 
+não precisa de banco de dados. 
 
 
 
