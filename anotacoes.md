@@ -1678,7 +1678,7 @@ através dessa arejeição seja uma isntancia da classe UserAlreadyExistsError.
             password: '123456',
         })
 
-        expect(() =>
+        await expect(() =>
             registerUseCase.execute({
                 name: 'Albert Einstein',
                 email,
@@ -1686,6 +1686,8 @@ através dessa arejeição seja uma isntancia da classe UserAlreadyExistsError.
             }),
         ).rejects.toBeInstanceOf(UserAlreadyExistsError)
     })
+
+- Toda vez que tiver uma promise dentro do expect deve ser utilizado o await.
 
 - Em seguida foi feito umultimo teste que vai validar que deu tudo certo no cadastro 
 should be able to register esse teste não faz nada ele só cria um usuário e verificar
@@ -1704,6 +1706,30 @@ seja igual a qualquer string.
 
         expect(user.id).toEqual(expect.any(String))
     })
+
+# Gerando coverage de testes
+
+- Nas grandes maiorias dos Frameworks de testes existe uma ferramenta chamada 
+coverage e para utilizar eu vou dentro do package.json  e crio umnovo script 
+"test:coverage": "vitest run --coverage"  para rodar essa ferramenta. 
+
+## Rodando o Coverage 
+
+- npm run test:coverage 
+
+- Ao rodar ele vai identificar que falta instalar uma dependencia e vai perguntar 
+se pode ser instalada podemos dizer que sim.
+
+- Após rodar o Coverage ele vai gerar um relatorio e vai gerar uma pasta 
+chamada coverage, essa pasta pode ser jogada no .gitignore para ela não 
+subir ao git-hub, essa pasta tem um arquivo index.html que eu posso abrir
+no navegador que traz uma listagem de todos os arquivos da aplicação em 
+que os testes de alguma forma passaram e o percentual desses arquivos 
+que foi cobertos por esses testes.
+
+- Eu posso selecionar esses arquivos que foram cobertos pelos testes e 
+e abrindo esses arquivos ele vai mostrar o código emostra o número de 
+quantas vezes os testes foram executados por linha de código.
 
 
 
