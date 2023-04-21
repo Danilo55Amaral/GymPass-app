@@ -1577,6 +1577,135 @@ e que não ecista conflito entre esses testes.
 precisar do banco de dados, isso por que a funcionalidade de hash da senha 
 não precisa de banco de dados. 
 
+# In-Memory Databases
+
+- Essa técnica de passar para dentro do caso de uso um repositorio ficticio é 
+um Pattner existente dentro da comunidade principalmente voltada a testes. 
+
+- InMemoryTestDatabase é o Pattner que estamos utilizando para quando for 
+exeutar os testes da aplicação uma representação do banco de dados emmemoria 
+ou seja os dados sendo salvos em Variáveis, isso torna o teste muito mais rapido de 
+ser executado, também da para focar somente nas funcionalidades do caso de uso  
+sem precisar bater no banco de dados. 
+
+- Como vamos ter mais testes não é legal ficar criando sempre esse repositorio do zero 
+por isso vamos refatorar esse código e separar isso. 
+
+- Dentro da pasta repositories foi criada uma nova pasta chamada in-memory e demtro foi 
+criado um arquivo chamado in-memory-users-repository.ts essa parte é muito semelhante ao 
+prisma repository, foi criada uma classe chamada InMemoryUserRepository e implemenada 
+UserRepository, dando um crtl + . em cima de InMemoryUsersRepository ele vai me perguntar 
+se quero implementar a interface, com isso ele já gera os metodos, sem seguida eu transformei
+esses metodos em async, posso retirar a parte de retorno pois ele infere isso de forma 
+automatica. 
+
+class InMemoryUsersRepository implements UsersRepository {
+    async findByEmail(email: string) {
+        throw new Error("Method not implemented.");
+    }
+    async create(data: Prisma.UserCreateInput) {
+        throw new Error("Method not implemented.");
+    }
+}
+
+- Eu recortei a parte dos metodos findByEmail e create de dentro do meu arquivo de teste 
+e agora eu apenas utilizo eles nos meus novo metodos nesse meu novo arquivo. Esses dados 
+de criação de usuário como não estamos utilizando o banco de dados para esse teste, vamos 
+criar uma variavel para salvar esses dados em memoria, por isso foi criada uma variavel 
+publica chamada items que é como seriam os registros no banco de dados, e dentro de items 
+temos vários usuários e por isso foi criado como um array vazio, vou utilizar um push para
+inserir esses dados de user dentro de items.
+
+class InMemoryUsersRepository implements UsersRepository {
+    public items: User[] = []
+
+    async findByEmail(email: string) {
+        throw new Error("Method not implemented.");
+    }
+
+    async create(data: Prisma.UserCreateInput) {
+        const user = {
+            id: 'user-1',
+            name: data.name,
+            email: data.email,
+            password_hash: data.password_hash,
+            created_at: new Date(),
+        }
+
+        this.items.push(user)
+
+        return user
+    }
+}
+
+- Também mexemos no metodo findByEmail para buscar um usuario pelo email dentro de items que
+é um array de usuários.  
+
+async findByEmail(email: string) {
+        const user = this.items.find((item) => item.email == email)
+
+        if (!user) {
+            return null 
+        }
+
+        return user
+    }
+
+- Em seguida voltando dentro do arquivo de teste eu crio uma const chamada usersRpository e 
+instancio com o new a classe que acabei de criar e com isso os testes vão rodar. 
+
+        const usersRepository = new InMemoryUsersRepository()
+        const registerUseCase = new RegisterUseCase(usersRepository)
+
+- Foi criado mais um teste que o usuário não pode criar uma conta com o email repetido 
+==> should not be able to register with same email twice ==> não é possivel se cadastrar
+com o mesmo email duas vezes, eu crio uma const email com umemail que vou usar para 
+cadastrar duas vezes nesse teste, com isso eu espero que na segunda vez que vai ser chamado 
+o registerUseCAse passando dentro de uma função, com isso eu espero que quando essa promise 
+terminar de executar ela rejects rejeite ou seja der erro e quero que o resultado dela seja 
+uma instancia da classe, ou seja eu espero que essa promise der um erro e que o erro vindo 
+através dessa arejeição seja uma isntancia da classe UserAlreadyExistsError.
+
+  it('should not be able to register with same email twice', async () => {
+        const usersRepository = new InMemoryUsersRepository()
+        const registerUseCase = new RegisterUseCase(usersRepository)
+
+        const email = 'einstein@example.com'
+
+        await registerUseCase.execute({
+            name: 'Albert Einstein',
+            email,
+            password: '123456',
+        })
+
+        expect(() =>
+            registerUseCase.execute({
+                name: 'Albert Einstein',
+                email,
+                password: '123456',
+            }),
+        ).rejects.toBeInstanceOf(UserAlreadyExistsError)
+    })
+
+- Em seguida foi feito umultimo teste que vai validar que deu tudo certo no cadastro 
+should be able to register esse teste não faz nada ele só cria um usuário e verificar
+se está sendo criado com sucesso, eu espero que o id do usuário retornado dessa função 
+seja igual a qualquer string.
+
+ it('should be able to register', async () => {
+        const usersRepository = new InMemoryUsersRepository()
+        const registerUseCase = new RegisterUseCase(usersRepository)
+
+        const { user } = await registerUseCase.execute({
+            name: 'Albert Einstein',
+            email: 'einstein@example.com',
+            password: '123456',
+        })
+
+        expect(user.id).toEqual(expect.any(String))
+    })
+
+
 
 
 
