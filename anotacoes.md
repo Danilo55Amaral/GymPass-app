@@ -1750,5 +1750,112 @@ Vitest UI   https://vitest.dev/guide/ui.html
 tdos os testes, códigos, gráficos que mostram quais partes da aplicação estão 
 conectadas as testes.
 
+# Caso de uso de autenticação
 
+- É sempre bom começar uma nova criação de uma nova funcionalidade pelo caso de uso 
+ isso por que o caso de uso descreve a funcionalidade pelo seu mais baixo nível, o 
+ caso de uso em si consiguimos testar ele desde o incio com testes unitários.
 
+ - PS- Sempre desenhamos um software de baixo para cima da funcionalidade do seu mais baixo 
+ nível até chegar nas camadas externas que se conectam aos meios externos como chamadas 
+ HTTP ou banco de dados e outras coisas. 
+
+ ## Autenticação 
+
+- Eu criei o meu caso de uso para a funcionalidade de autenticação, dentro da 
+pasta use-cases eu criei um arquivo chamado authenticate.ts dentro desse arquivo 
+foi escrito o caso de uso em formato de classe por que isso facilita o uso da 
+inversão de dependencias. 
+
+- Foi criada uma classe que recebe um constructor com as dependencias que o 
+caso de uso vai ter, como é necessário aqui também acessar o banco de dados 
+para fazer a autenticação do usuário, por isso desde o inicio criamos a 
+depdencia do UsersRepository e por isso o importamos, Também foi criado um 
+metodo execute que faz o processo de autenticação.
+
+- Sempre teremos as tipagens de entradas e saidas e por isso também ja criei 
+duas interfaces , de entrada o que a pessoa precisa enviar para fazer a 
+autenticação e a outra o que que espero devolver de dentro para saber que o 
+usuário realmente doi autenticado ou não.
+
+- Para fazer a autenticação serão necessários o email e o password da pessoa 
+isso é básico na maioria das aplicações, em seguida eu vou desestruturar isso
+dentro de execute, isso vai devolver uma Promise isso por que estamos trabalhando 
+com função async e ela sempre vai devolver uma Promise, essa Promise vai devolver
+como resposta meu objeto da segunda intrface. 
+
+import { UsersRepository } from "@/repositories/users-repository";
+
+interface AuthenticateUseCaseRequest {
+    email: string
+    password: string
+}
+
+type AuthenticateUseCaseResponse = void
+
+export class AuthenticateUseCase {
+    constructor(private usersRepository: UsersRepository) {}
+
+    async execute({
+        email,
+        password,
+    }: AuthenticateUseCaseRequest): Promise<AuthenticateUseCaseResponse> {}
+}
+
+- PS = Para fazer o processo de autenticação do  usuário é necessário buscar 
+o usuário no banco de dados pelo email e comparar se a senha salva no banco 
+bate com a senha do parametro.
+
+- PS = Sobre o hash da senha não tem como fazer o processo de hash inverso da 
+senha que foi salva no banco de dados, para validar que a senha da autenticação 
+é válida é necessário fazer um novo hash dela e comparar com a senha que já tinha
+salva antes no banco de dados.
+
+- Podemos reaproveitar o metodo findByEmail que foi criado dentro do repositorio 
+por isso eu vou armazenar em uma const chamada user o mtodo passando email.
+
+        const user = await this.usersRepository.findByEmail(email)
+
+- Em seguida eu montei o if se eu não encontrar um usuário com esse email 
+ai vamos retornar o erro, para isso dentro da pasta de erros eu criei um
+novo arquivo de erro chamado invalid-credntials-error.ts , note que criei 
+um erro bem generico sem muitos indicios do que pode ser isso por que caso 
+algum usuário tente invadir uma conta não mostrar nehum indicio do que possa 
+está errado, por isso sempre retornamos um erro mais generico para todos os 
+tipos de erros que acontecem no processo de autenticação. 
+
+- Arqui eu posso copiar o código do outro eerro e mudar o nome e a mensagem.
+
+export class InvalidCredentialsError extends Error {
+    constructor() {
+        super('Invalid credentials.')
+    }
+}
+
+- Em seguida eu dei um trow new passando esse erro dentro do bloco if que acabei
+de criar.
+
+        if (!user) {
+            throw new InvalidCredentialsError()
+        }
+
+- Se o usuário existir vamos comparar as senhas e para isso eu criei uma variavel 
+chamada doesPasswordMatches e vou passar para essa variavel o metodo compare que 
+vem de dentro do bcrypt esse metodo pega uma senha sem ter feito o hash dela pega
+também uma senha gerada com o hash e compara se a senha sem o hash pode ser usada
+para fazer aquela com o hash e com isso ele verifica se elas batem ou seja se são 
+a mesma senha.
+
+const doesPasswordMatches = await compare(password, user.password_hash)
+
+- montamos um novo if se caso as senhas não baterem retornamos o mesmo erro 
+
+        if (!doesPasswordMatches) {
+            throw new InvalidCredentialsError()
+        }
+
+- Caso as senhas batam eu posso retornar de dentro do meu caso de uso o user.
+
+        return {
+            user,
+        }
