@@ -1731,7 +1731,24 @@ que foi cobertos por esses testes.
 e abrindo esses arquivos ele vai mostrar o código emostra o número de 
 quantas vezes os testes foram executados por linha de código.
 
+# Utilizando UI do Vitest 
 
+- Uma outra ferramenta de teste bem interessante do  proprio vitest é o 
+Vitest UI   https://vitest.dev/guide/ui.html
+
+- É uma interface para navegar e visualizar os testes, execitar os testes. 
+
+- Para instalar rode o comando abaixo 
+    npm i -D @vitest/ui  
+
+- Em seguida eu crio um novo comando dentro do package.json para rodar a interface.
+    "test:ui": "vitest --ui" 
+
+- Para rodar a interface utilizamos o comando   npm run test:ui  
+
+- Rodando ele vai abrir uma aba no navegador e executar todos os testes, mostra 
+tdos os testes, códigos, gráficos que mostram quais partes da aplicação estão 
+conectadas as testes.
 
 
 
