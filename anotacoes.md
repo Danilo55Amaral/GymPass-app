@@ -1859,3 +1859,144 @@ const doesPasswordMatches = await compare(password, user.password_hash)
         return {
             user,
         }
+
+
+# Testes e controller de autenticação 
+
+- Aqui escrevemos os testes da funcionalidade de autenticação, note que quando escrevemos a 
+aplicação dividida em mais arquivos arquitetada de uma forma melhor separando o acesso ao 
+banco de dados, separando os controlles que são a parte dos arquivos que conectam a aplicação 
+ao meio externo ou seja a camada HTTP da aplicação, com isso comecamos a poder escrever testes 
+e testar funcionalidades muito antes de colocar a aplicação no ar ou de criar a rota para acessar 
+a funcionalidade. 
+
+- É muito interessante por que grande parte das aplicaçõe desenvolvidas não é necessário nem 
+rodar o servidor dessas aplicações todas as alterações são mexidas no código e em seguida são 
+rodados os testes se os testes passarem quer dizer que tudo está funcionando.
+
+## Criando testes 
+- Dentro da pasta de casos de usos onde fica o arquivo de authenticate foi criado o arquivo de 
+authenticate.spec que é meu arquivo de testes para essa funcionalidede. 
+
+## SUT
+- Uma dica é que existe um Pattener dentro da comunidade de testes que é nomear qual que é a 
+variavel principal como sut que é o System undend test, podemos utilizar essa variavel para 
+indicar qual que é o principal variavel dentro do teste que está sendo testada com isso se 
+quisermos copiar esse mesmo teste para outro arquivo esse nome não será esquecido por que ele 
+vai ser valido em ambos arquivos.
+
+- Como temos acesso direto ao userRpository podemos antes de executar o processo de autenticação 
+cadastrar um usuário dentro do repositorio, vou ter acesso ao metodo create que é quem vai fazer a 
+criação de um usuário, na parte de senha é mecesario passar o password_hash utilizando um await por que
+vamos utilizar a função hash do bcrypt gerando um hash para a senha e passando o nível desse hash que 
+no caso da aplicação é 6. 
+
+describe('Authenticate Use Case', () => {
+    it('should be able to authenticate', async () => {
+        const usersRepository = new InMemoryUsersRepository()
+        const sut = new AuthenticateUseCase(usersRepository)
+
+        await usersRepository.create({
+            name: 'Albert Einstein',
+            email: 'einstein@example.com',
+            password_hash: await hash('123456', 6),
+        })
+
+        const { user } = await sut.execute({
+            email: 'einstein@example.com',
+            password: '123456',
+        })
+
+        expect(user.id).toEqual(expect.any(String))
+    })
+
+- Também foi escrito outro teste para cair nos ifs das credenciais invalidas nesse teste testamos 
+fazer autenticação com um emal que não existe nesse teste eu espero que ao executar essas funcionalidade
+ela rejeite e o erro seja uma imstância de InvalidCredentialsError.
+
+it('should not be able to authenticate with wrong email', async () => {
+        const usersRepository = new InMemoryUsersRepository()
+        const sut = new AuthenticateUseCase(usersRepository)
+
+        expect(() => sut.execute({
+            email: 'einstein@example.com',
+            password: '123456',
+        }),
+        ).rejects.toBeInstanceOf(InvalidCredentialsError)
+})
+
+- Vou fazer outro teste porém agora com a senha e nesse teste também é necessário criar um usuario 
+porém nesse teste autenticamos com a senha errada e esperamos que o erro seja o mesmo.
+
+it('should not be able to authenticate with wrong password', async () => {
+        const usersRepository = new InMemoryUsersRepository()
+        const sut = new AuthenticateUseCase(usersRepository)
+
+        await usersRepository.create({
+            name: 'Albert Einstein',
+            email: 'einstein@example.com',
+            password_hash: await hash('123456', 6),
+        })
+
+        expect(() => sut.execute({
+            email: 'einstein@example.com',
+            password: '123123',
+        }),
+        ).rejects.toBeInstanceOf(InvalidCredentialsError)
+    })
+
+## Controller 
+
+- Aqui criamos o controle de autenticação, dentro da pasta controllers foi criado um arquivo chamado 
+authenticate.ts eu posso copiar todo o código do arquivo de register pois vai ser bem semelhante 
+precisamos fazer apenas algumas substituições.
+
+- É importante mudar o tipo de erro pois o tipo de erro que teremos aqui é InvalidCredentialsError 
+
+import { FastifyRequest, FastifyReply } from "fastify";
+import { z } from "zod";
+import { PrismaUsersRepository } from '@/repositories/prisma/prisma-users-repository';
+import { AuthenticateUseCase } from "@/use-cases/authenticate";
+import { InvalidCredentialsError } from "@/use-cases/errors/invalid-credentials-error";
+
+export async function authenticate(request: FastifyRequest, reply: FastifyReply) {
+    const authenticateBodySchema = z.object({
+        email: z.string().email(),
+        password: z.string().min(6),
+    })
+
+    const { email, password } = authenticateBodySchema.parse(request.body)
+
+    try {
+        const usersRepository= new PrismaUsersRepository()
+        const authenticateUseCase = new AuthenticateUseCase(usersRepository)
+
+        await authenticateUseCase.execute({
+            email,
+            password,
+        })
+    } catch (err) {
+        if (err instanceof InvalidCredentialsError) {
+            return reply.status(400).send({ message: err.message })
+        }
+
+        throw err 
+    }
+
+    return reply.status(200).send()
+}
+
+- No momento estamos apenas validando se email e senha do usuário estão corretos ainta 
+não está sendo criado um processo de autenticação, é necessário ter uma forma de identificar
+o usuário ou seja o usuário se auntenticou na plataforma uma primeira vez é necessário ter 
+uma forma de se identficar o usuário em todas as próximas requisições que forem feitas 
+na aplicação.
+
+## Criando uma rota 
+
+- Foi criada uma nova rota para a aplicação ela pode ser do tipo post por que 
+se queremos verificar o body da requisição não podemos utilizar o get.
+podemos pensar no nome da rota como uma entidade por que fica mais semantico de entender. 
+O Controller que utilizamos nessa nova rota é o authenticate.
+
+- Após criar essa rota podemos testar utilizando o insomnia.
