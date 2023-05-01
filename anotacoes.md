@@ -2000,3 +2000,20 @@ podemos pensar no nome da rota como uma entidade por que fica mais semantico de 
 O Controller que utilizamos nessa nova rota é o authenticate.
 
 - Após criar essa rota podemos testar utilizando o insomnia.
+
+# Refatorando instâncias nos testes
+
+- Uma das coisas que podemos notar é que as duas linhas em que fazemos a instanciação 
+dentro dos arquivos de testes estão se repetindo em todos os testes, podemos refatorar 
+esse codigo e sinplificar isso. 
+
+- Para isso eu recortar essas duas linhas e vou utilizar uma função chamada beforeEach 
+que vou importar de dentro do vitest, essa função vai executar antes de cada um dos testes
+e dentro dele podemos colocar um código em comum que queira que seja executado, só que 
+tudo que está dentro dessa função não fica globalmente visivel para todos os testes, por isso
+é necessário criar de forma global as variaveis e apenas tipamos ela sem atribuir nenhum valor,
+dentro do beforeEach é que inicializamos as variaveis.
+
+- Em baixo eu subistituo as variaveis.
+- Foi feito esse mesmo processo na parte de autenticação.
+
