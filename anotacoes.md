@@ -2017,3 +2017,43 @@ dentro do beforeEach é que inicializamos as variaveis.
 - Em baixo eu subistituo as variaveis.
 - Foi feito esse mesmo processo na parte de autenticação.
 
+# Utilizando Factory Pattern 
+
+- Esse Pattern é uma fabrica de coisas comuns que tem muitas dependencias sempre 
+que tiver algum tipo de código na aplicação que vai ser utilizado em vários locais 
+da aplicação, e esse código possue varias dependencias podemos utilizar o Factory Pattern. 
+
+- Para utilizar esse Pattner na aplicação dentro da pasta de casos de usos por que vamos 
+construir Factorys para os casos de uso, foi criada uma pasta chamada factories, existem 
+varios padrões de nomeclaturas na hora de criar os factorys, aqui vamos utilizar o make 
+mas o nome. Aqui criamos o make-register-use-case.ts essa factory vai ser utilizada para 
+criar casos de uso de registro. 
+
+-  Nesse arquivo vamos ter uma sinples função chamada makeRegisterUseCase que vai devolver 
+o nosso caso de uso porém já com todas as dependencias e retorno o meu registerUseCase.
+
+import { PrismaUsersRepository } from "@/repositories/prisma/prisma-users-repository"
+import { RegisterUseCase } from "../register"
+
+export function makeRegisterUseCase() {
+    const usersRepository= new PrismaUsersRepository()
+    const registerUseCase = new RegisterUseCase(usersRepository)
+
+    return registerUseCase
+}
+
+- Agora dentro do meu Controller quando eu precisar do meu caso de uso basta chamar a função
+que foi criada agora.
+
+- Como agora tesmo um factory que é um centralizador de criação do nosso caso de uso 
+toda vez que for necessário modificar as dependencias desse caso de uso basta ir nesse 
+arquivo e modificar as dependencias que vai refletir em todos os locais em que esse caso 
+de uso está sendo utilizado.
+
+- O mesmo processo foi feito para o authenticate.
+
+- O Factory pattner vai servir para criar essas fabricas que são funções que criam 
+entidades maiores com dependencias, calculos e muito mais. Geralmente não possuem
+regras de negócio servem mesmo para instanciação de classes e instancias de entidades 
+da aplicação que possuem muitas dependencias. 
+
